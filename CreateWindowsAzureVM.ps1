@@ -16,7 +16,10 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
   $vnet = New-AzureRmVirtualNetwork -ResourceGroupName $resGroup -Location $loc -Name psLabVNet -AddressPrefix 10.0.0.0/16 -Subnet $subnetConfig
 
   # Create a public IP address and specify a DNS name (appears in the portal after this command)
-  $pip = New-AzureRmPublicIpAddress -ResourceGroupName $resGroup -Location $loc -Name "coatelab$(Get-Random)" -AllocationMethod Dynamic -IdleTimeoutInMinutes 4
+  # Add DomainNameLabel to create an fqdn
+  $pip = New-AzureRmPublicIpAddress -DomainNameLabel $name -ResourceGroupName $resGroup -Location $loc -Name "coatelab$(Get-Random)" -AllocationMethod Dynamic -IdleTimeoutInMinutes 4
+  #$pip=New-AzurePublicIpAddress -Name $nicName -ResourceGroupName $rgName -DomainNameLabel $domName -Location $locName -AllocationMethod Dynamic
+  #DomainNameLabel must be lowercase
   
   # Create an inbound network security group rule for port 22, 80 and 3389 so we can ssh, Web Browse and RDP to this machine
   # $nsgRuleSSH = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
@@ -68,7 +71,7 @@ $resourceGroup = "psWinResourceGroup"
 $securePassword = ConvertTo-SecureString 'H0rnyBunny' -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential ("coateds", $securePassword)
 
-New-MyAzureVM "westus" "psLabWinVM" $resourceGroup $cred
+New-MyAzureVM "westus" "pslabwinvm" $resourceGroup $cred
 
 
 # Run this to delete the whole kabooble (and the kit too)
@@ -98,6 +101,6 @@ New-MyAzureVM "westus" "psLabWinVM" $resourceGroup $cred
 # set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
 # winrm set winrm/config '@{MaxTimeoutms="1800000"}'
 
-Get-AzureRmDnsRecordSet -ZoneName "westus.cloudapp.azure.com" -ResourceGroupName $resourceGroup
+# Get-AzureRmDnsRecordSet -ZoneName "westus.cloudapp.azure.com" -ResourceGroupName $resourceGroup
 
-(get-AzureRmPublicIpAddress -ResourceGroupName psWinResourceGroup -Name coatelab771237650).DnsSettings
+# (get-AzureRmPublicIpAddress -ResourceGroupName psWinResourceGroup -Name coatelab875374664).DnsSettings
