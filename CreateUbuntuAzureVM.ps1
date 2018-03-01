@@ -16,8 +16,9 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
   $vnet = New-AzureRmVirtualNetwork -ResourceGroupName $resGroup -Location $loc -Name psLabVNet -AddressPrefix 10.0.0.0/16 -Subnet $subnetConfig
 
   # Create a public IP address and specify a DNS name (appears in the portal after this command)
-  $pip = New-AzureRmPublicIpAddress -ResourceGroupName $resGroup -Location $loc -Name "coatelab$(Get-Random)" -AllocationMethod Dynamic -IdleTimeoutInMinutes 4
-  
+  # DomainNameLabel must be lowercase
+  $pip = New-AzureRmPublicIpAddress -DomainNameLabel $name -ResourceGroupName $resGroup -Location $loc -Name "coatelab$(Get-Random)" -AllocationMethod Dynamic -IdleTimeoutInMinutes 4
+
   # Create an inbound network security group rule for port 22, 80 and 3389 so we can ssh, Web Browse and RDP to this machine
   $nsgRuleSSH = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
   $nsgRuleWeb = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleWeb -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 80 -Access Allow
@@ -25,15 +26,15 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
 
   # Create a network security group (appears in the portal after this command)
   $nsg = New-AzureRmNetworkSecurityGroup -ResourceGroupName $resGroup -Location $loc -Name psLabNSG -SecurityRules $nsgRuleSSH,$nsgRuleWeb,$nsgRuleRdp
-  
+
   # Create a virtual network card and associate it with the public IP address and NSG (appears in the portal after this command)
   $nic = New-AzureRmNetworkInterface -Name psLabNIC -ResourceGroupName $resGroup -Location $loc -SubnetId $vnet.Subnets[0].Id -PublicIpAddressId $pip.Id -NetworkSecurityGroupId $nsg.Id
-  
+
   # Create a virtual machine configuration -Linux
-  $vmConfig = New-AzureRmVMConfig -VMName $name -VMSize Standard_A1 | 
-    Set-AzureRmVMOperatingSystem -Linux -ComputerName $name -Credential $clientcred | 
-    Set-AzureRmVMSourceImage -PublisherName Canonical -Offer UbuntuServer -Skus 16.04-LTS -Version latest | 
-    Set-AzureRmVMOSDisk -Name psLabOSDisk -DiskSizeInGB 128 -CreateOption FromImage -Caching ReadWrite -StorageAccountType StandardLRS | 
+  $vmConfig = New-AzureRmVMConfig -VMName $name -VMSize Standard_A1 |
+    Set-AzureRmVMOperatingSystem -Linux -ComputerName $name -Credential $clientcred |
+    Set-AzureRmVMSourceImage -PublisherName Canonical -Offer UbuntuServer -Skus 16.04-LTS -Version latest |
+    Set-AzureRmVMOSDisk -Name psLabOSDisk -DiskSizeInGB 128 -CreateOption FromImage -Caching ReadWrite -StorageAccountType StandardLRS |
     Add-AzureRmVMNetworkInterface -Id $nic.Id
 
   # Create the virtual machine
@@ -56,7 +57,7 @@ $resourceGroup = "psUbuntuResourceGroup"
 $securePassword = ConvertTo-SecureString 'H0rnyBunny' -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential ("coateds", $securePassword)
 
-New-MyAzureVM "westus" "psLabUbuntuVM" $resourceGroup $cred
+New-MyAzureVM "westus" "pslabubuntuvm" $resourceGroup $cred
 
 # These commands cannot be run inside the PE ISE. Go to ChefDK PS window
 # Test Connection:  ssh coateds@138.91.246.158

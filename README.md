@@ -9,7 +9,13 @@ Log in to azure
 (This command does not seem to work inside a script... Maybe it needs a sleep command??)
 `Add-AzureRmAccount`
 
-There is a Chef Gem that also needs to be installed on the ChefDK workstation
+```diff
+-Alternate is use Get-AzurePublishSettingsFile for automation
+-save the file in c:\chef (or whatever chef root dir you are working from)
+```
+
+There is a Chef Gem that also needs to be installed on the ChefDK workstation for Windows WinRM
+`gem install knife-windows`
 
 ## Ubuntu Server 16.04 latest
 opens ports 22, 80 and 3389, the Chef role installs a web server, xRDP and a GUI. Test the installation with ssh, RDP and a browser.
@@ -24,7 +30,7 @@ When bootstrapping a test node like this, be sure to delete the old node from ho
 The bootstrap command must be run from the ChefDK special PS window. The current dir of that window must contain a .chef dir that points to the correct hosted chef organization.
 
 ## Windows 2016 Latest
-opens ports 80, 3389 and 5985
+opens ports 80, 3389 and 5985 (22 not 5985 if working inside my workplace)
 
 The script's function will return the public IP address of the new VM, but the bootstrap command requires a public FQDN be set in Azure for the NIC of the VM. Creating the FQDN in the Az Portal is simple. Just configure the DNS Name for the VM.
 
@@ -40,21 +46,21 @@ netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" p
 # This command changes remoteip from localsubnet to any
 ```
 
-While on the subject of WinRM through the firewall, I have been assuming this protocol is not allowed at my workplace. Now is a good time to explore that idea and workarounds such as using port 5986
-
-5985 continues to fail to Try 5986, I need to open that port on the client and specify that port on the bootstrap command (-p 5986)  AND I need to open it in the NSG
-
-There is a WinRM compatibility mode that shows promise. Instead of opening port 5985 to the Internet. Set WinRM to use port 80 instead: On the client VM
-`Set-Item WSMan:\localhost\Service\EnableCompatibilityHttpListener -Value true`
-
 Source: https://blogs.technet.microsoft.com/christwe/2012/06/20/what-port-does-powershell-remoting-use/
 
-The question is whether the '-p 80' is required on the knife bootstrap command  --  yes it is required!
 
 Recap on a Windows VM
 1. The FQDN requirement is easily fulfilled in the PS script
-2. The firewall on the Windows Server must be opened in 1 of 2 ways
+2. The firewall on the Windows Server must be opened in 1 of 3 ways
   * `netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any`
   * `Set-Item WSMan:\localhost\Service\EnableCompatibilityHttpListener -Value true`  In this case '-p 80' must be added to the bootstrap command
+  * `Set-Item wsman:\localhost\listener\listener*\port –value <Port>`  For my workplace port = 22 and '-p 22' must be added to the bootstrap command
+  * Source: https://blogs.technet.microsoft.com/christwe/2012/06/20/what-port-does-powershell-remoting-use/
 
-Test Change
+## Azure Chef Extension
+For use with Azure, there is an alternative to bootstrapping a node.
+
+Start research here:
+https://github.com/chef-partners/azure-chef-extension
+https://docs.microsoft.com/en-us/azure/virtual-machines/windows/extensions-features
+https://docs.microsoft.com/en-us/azure/virtual-machines/windows/chef-automation
