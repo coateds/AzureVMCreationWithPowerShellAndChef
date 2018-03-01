@@ -56,3 +56,5 @@ Recap on a Windows VM
 2. The firewall on the Windows Server must be opened in 1 of 2 ways
   * `netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any`
   * `Set-Item WSMan:\localhost\Service\EnableCompatibilityHttpListener -Value true`  In this case '-p 80' must be added to the bootstrap command
+
+Test Change
