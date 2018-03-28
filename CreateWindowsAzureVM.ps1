@@ -22,13 +22,13 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
   #DomainNameLabel must be lowercase
   
   # Create an inbound network security group rule for port 22, 80 and 3389 so we can ssh, Web Browse and RDP to this machine
-  # $nsgRuleSSH = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
+  $nsgRuleSSH = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
   $nsgRuleWeb = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleWeb -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 80 -Access Allow
   $nsgRuleRdp = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleRdp -Protocol Tcp -Direction Inbound -Priority 101 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
   $nsgRuleWinRm = New-AzureRmNetworkSecurityRuleConfig -Name myNetworkSecurityGroupRuleWinRm -Protocol Tcp -Direction Inbound -Priority 102 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 5985 -Access Allow
 
   # Create a network security group (appears in the portal after this command)
-  $nsg = New-AzureRmNetworkSecurityGroup -ResourceGroupName $resGroup -Location $loc -Name psLabNSG -SecurityRules $nsgRuleWeb,$nsgRuleRdp,$nsgRuleWinRm
+  $nsg = New-AzureRmNetworkSecurityGroup -ResourceGroupName $resGroup -Location $loc -Name psLabNSG -SecurityRules $nsgRuleSSH,$nsgRuleWeb,$nsgRuleRdp,$nsgRuleWinRm
   
   # Create a virtual network card and associate it with the public IP address and NSG (appears in the portal after this command)
   $nic = New-AzureRmNetworkInterface -Name psLabNIC -ResourceGroupName $resGroup -Location $loc -SubnetId $vnet.Subnets[0].Id -PublicIpAddressId $pip.Id -NetworkSecurityGroupId $nsg.Id
@@ -36,11 +36,17 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
   # Debug: No net security group
   # $nic = New-AzureRmNetworkInterface -Name psLabNIC -ResourceGroupName $resGroup -Location $loc -SubnetId $vnet.Subnets[0].Id -PublicIpAddressId $pip.Id
   
+  $WindowSku = "2008-R2-SP1"
+  # 2016-Datacenter
+  # 2012-R2-Datacenter
+  # 2012-Datacenter
+  # 2008-R2-SP1
+
   # Create a virtual machine configuration -Windows
   # Renames and sets password for built-in admin account to $clientcred
   $vmConfig = New-AzureRmVMConfig -VMName $name -VMSize Standard_A1 | 
     Set-AzureRmVMOperatingSystem -Windows -ComputerName $name -Credential $clientcred | 
-    Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | 
+    Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus $WindowSku -Version latest | 
     Set-AzureRmVMOSDisk -Name psLabOSDisk -DiskSizeInGB 128 -CreateOption FromImage -Caching ReadWrite -StorageAccountType StandardLRS | 
     Add-AzureRmVMNetworkInterface -Id $nic.Id
 
@@ -65,13 +71,13 @@ Function New-MyAzureVM ($loc, $name, $resGroup, $clientcred)
 
 # Variables for common values
 # Set a variable to be your resource group's name
-$resourceGroup = "psWinResourceGroup"
+$resourceGroup = "ps2008r2ResourceGroup"
 
 # Create login credentials for your VM
 $securePassword = ConvertTo-SecureString 'H0rnyBunny' -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential ("coateds", $securePassword)
 
-New-MyAzureVM "westus" "pslabwinvm" $resourceGroup $cred
+New-MyAzureVM "westus" "pslab2008r2vm" $resourceGroup $cred
 
 
 # Run this to delete the whole kabooble (and the kit too)
